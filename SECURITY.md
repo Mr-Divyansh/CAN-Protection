@@ -7,7 +7,7 @@
 - Enforce 5-minute OTP expiry (`410`), max 5 verification attempts (`429`), atomic single-use replay consumption (`409` if already consumed), 30s resend cooldown, and sliding-window IP/number rate limits.
 - Fail closed (`503`) whenever production (`NODE_ENV=production` or `VERCEL=1`) lacks a configured real SMS provider (`OTP_PROVIDER=twilio` or `msg91`). Demo OTP is never permitted in production; `ALLOW_DEV_OTP_DEMO` has no effect.
 - Production requires Supabase registration storage, a persistent 32+ character `CAN_SERVER_SECRET`, and a persistent SQLite path explicitly enabled for single-instance Node hosting. Vercel/serverless and multi-instance deployments are blocked until transient state uses a shared store.
-- IP rate-limit identity uses Express `req.ip`; no raw client-supplied `X-Forwarded-For` header is trusted unless a verified proxy hop count is explicitly configured.
+- IP rate-limit identity uses Express `req.ip`; no raw client-supplied `X-Forwarded-For` header is trusted unless a verified proxy hop count is explicitly configured. Rate-limit checks and reservations run in a SQLite `BEGIN IMMEDIATE` transaction so concurrent requests cannot race past the configured limits.
 - Require explicit confirmation (`{ confirm: true }`) for deactivation and explicitly update `updated_at` on every `phone_registrations` change.
 - Keep `SUPABASE_SECRET_KEY`, `PHONE_LOOKUP_HMAC_KEY`, `CAN_SERVER_SECRET`, and OTP provider keys strictly in server-side `process.env` (never exposed to browser bundles or responses).
 - Keep RLS enabled on `public.phone_registrations` intentionally with **zero** `anon`/`authenticated`/public access policies, accessing the table exclusively through the Express server using `SUPABASE_SECRET_KEY`.
