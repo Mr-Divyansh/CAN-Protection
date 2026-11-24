@@ -92,8 +92,8 @@ export function validateStorageEnvironment(
         error: 'Production requires Supabase registration storage. Local SQLite fallback is disabled in production.',
       };
     }
-    if (hasHmac && hmacKey.length < 16) {
-      return { valid: false, backend: 'supabase_postgres', missingVars: ['PHONE_LOOKUP_HMAC_KEY'], error: 'PHONE_LOOKUP_HMAC_KEY must be at least 16 characters when configured.' };
+    if (hasHmac && hmacKey.length < 32) {
+      return { valid: false, backend: 'supabase_postgres', missingVars: ['PHONE_LOOKUP_HMAC_KEY'], error: 'PHONE_LOOKUP_HMAC_KEY must be at least 32 characters when configured.' };
     }
     return { valid: true, backend: 'local_sqlite_dev', ...(hasHmac ? { phoneLookupHmacKey: hmacKey } : {}) };
   }
@@ -112,7 +112,7 @@ export function validateStorageEnvironment(
     }
   }
   if (!rawSecret) missingVars.push('SUPABASE_SECRET_KEY');
-  if (!hasHmac || hmacKey.length < 16) missingVars.push('PHONE_LOOKUP_HMAC_KEY');
+  if (!hasHmac || hmacKey.length < 32) missingVars.push('PHONE_LOOKUP_HMAC_KEY');
 
   if (production) {
     const serverSecret = env.CAN_SERVER_SECRET?.trim() ?? '';
