@@ -115,6 +115,8 @@ export function validateStorageEnvironment(
   if (!hasHmac || hmacKey.length < 16) missingVars.push('PHONE_LOOKUP_HMAC_KEY');
 
   if (production) {
+    const serverSecret = env.CAN_SERVER_SECRET?.trim() ?? '';
+    if (serverSecret.length < 32 || serverSecret.startsWith('MY_')) missingVars.push('CAN_SERVER_SECRET');
     // OTP challenges, sessions, and rate limits still use a local SQLite store.
     // Permit that only on a deliberately configured, single-instance Node host.
     if (env.VERCEL === '1') {
