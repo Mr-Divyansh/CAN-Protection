@@ -20,8 +20,8 @@ export function getServerPepper(): string {
 export function getPhoneLookupHmacKey(): string {
   if (hasRealEnvValue(process.env.PHONE_LOOKUP_HMAC_KEY)) {
     const key = process.env.PHONE_LOOKUP_HMAC_KEY!.trim();
-    if (key.length < 16) {
-      throw new Error('PHONE_LOOKUP_HMAC_KEY must be at least 16 characters.');
+    if (key.length < 32) {
+      throw new Error('PHONE_LOOKUP_HMAC_KEY must be at least 32 characters.');
     }
     return key;
   }

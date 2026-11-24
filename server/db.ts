@@ -98,8 +98,8 @@ export interface CanDatabase extends PhoneRegistrationsStore {
     createdAt: string;
   }): Promise<void>;
   getOtpChallengeById(id: string): Promise<DbOtpChallengeRow | null>;
-  incrementOtpAttempts(id: string): Promise<void>;
-  consumeOtpChallenge(id: string, consumedAt: string): Promise<boolean>;
+  incrementOtpAttempts(id: string, maxAttempts: number): Promise<number | null>;
+  consumeOtpChallenge(id: string, consumedAt: string, maxAttempts: number): Promise<boolean>;
   createVerifiedSession(input: {
     id: string;
     tokenHash: string;
@@ -322,14 +322,17 @@ function createSqliteTransientHandlers(db: DatabaseSync): Pick<
       return row ?? null;
     },
 
-    async incrementOtpAttempts(id) {
-      db.prepare('UPDATE otp_challenges SET attempts = attempts + 1 WHERE id = ?').run(id);
+    async incrementOtpAttempts(id, maxAttempts) {
+      const result = db.prepare(
+        'UPDATE otp_challenges SET attempts = attempts + 1 WHERE id = ? AND attempts < ? AND consumed_at IS NULL RETURNING attempts',
+      ).get(id, maxAttempts) as { attempts: number } | undefined;
+      return result ? Number(result.attempts) : null;
     },
 
-    async consumeOtpChallenge(id, consumedAt) {
+    async consumeOtpChallenge(id, consumedAt, maxAttempts) {
       const result = db
-        .prepare('UPDATE otp_challenges SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL')
-        .run(consumedAt, id);
+        .prepare('UPDATE otp_challenges SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL AND attempts < ?')
+        .run(consumedAt, id, maxAttempts);
       return Number(result.changes) > 0;
     },
 

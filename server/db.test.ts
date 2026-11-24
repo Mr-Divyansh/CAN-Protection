@@ -409,3 +409,58 @@ test('SQLite fallback removes legacy raw-phone tables and enforces hash-only sch
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+
+test('OTP challenge cannot be consumed after the atomic maximum-attempt threshold is reached', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'can-otp-lockout-db-test-'));
+  const previous = {
+    sqlitePath: process.env.CAN_SQLITE_PATH,
+    hmacKey: process.env.PHONE_LOOKUP_HMAC_KEY,
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseSecret: process.env.SUPABASE_SECRET_KEY,
+  };
+
+  process.env.CAN_SQLITE_PATH = path.join(tmpDir, 'lockout.db');
+  process.env.PHONE_LOOKUP_HMAC_KEY = 'db-lockout-test-hmac-key-at-least-32';
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SECRET_KEY;
+  resetDatabaseCacheForTests();
+
+  try {
+    const db = getDatabase();
+    const challengeId = '22222222-2222-4222-8222-222222222222';
+    const now = new Date().toISOString();
+    await db.createOtpChallenge({
+      id: challengeId,
+      phoneHash: 'c'.repeat(64),
+      phoneLast4: '4321',
+      countryCode: '+91',
+      otpHash: 'd'.repeat(64),
+      maxAttempts: 5,
+      expiresAt: new Date(Date.now() + 300_000).toISOString(),
+      resendAvailableAt: new Date(Date.now() + 30_000).toISOString(),
+      createdAt: now,
+    });
+
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      assert.equal(await db.incrementOtpAttempts(challengeId, 5), attempt);
+    }
+    assert.equal(await db.incrementOtpAttempts(challengeId, 5), null);
+    assert.equal(await db.consumeOtpChallenge(challengeId, now, 5), false);
+
+    const locked = await db.getOtpChallengeById(challengeId);
+    assert.equal(locked?.attempts, 5);
+    assert.equal(locked?.consumed_at, null);
+  } finally {
+    resetDatabaseCacheForTests();
+    if (previous.sqlitePath === undefined) delete process.env.CAN_SQLITE_PATH;
+    else process.env.CAN_SQLITE_PATH = previous.sqlitePath;
+    if (previous.hmacKey === undefined) delete process.env.PHONE_LOOKUP_HMAC_KEY;
+    else process.env.PHONE_LOOKUP_HMAC_KEY = previous.hmacKey;
+    if (previous.supabaseUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = previous.supabaseUrl;
+    if (previous.supabaseSecret === undefined) delete process.env.SUPABASE_SECRET_KEY;
+    else process.env.SUPABASE_SECRET_KEY = previous.supabaseSecret;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
