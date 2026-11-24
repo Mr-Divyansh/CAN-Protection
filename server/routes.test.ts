@@ -480,3 +480,71 @@ test('concurrent OTP requests reserve IP limits atomically and ignore spoofed X-
   }
 });
 
+
+
+test('concurrent invalid OTP submissions cannot exceed the per-challenge attempt limit', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'can-concurrent-otp-test-'));
+  const previous = {
+    sqlitePath: process.env.CAN_SQLITE_PATH,
+    hmacKey: process.env.PHONE_LOOKUP_HMAC_KEY,
+    provider: process.env.OTP_PROVIDER,
+    nodeEnv: process.env.NODE_ENV,
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseSecret: process.env.SUPABASE_SECRET_KEY,
+  };
+
+  process.env.CAN_SQLITE_PATH = path.join(tmpDir, 'concurrent.db');
+  process.env.PHONE_LOOKUP_HMAC_KEY = 'concurrency-test-hmac-key-at-least-32';
+  process.env.OTP_PROVIDER = 'demo';
+  process.env.NODE_ENV = 'development';
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SECRET_KEY;
+  resetDatabaseCacheForTests();
+
+  const srv = await startTestServer();
+  try {
+    const request = await fetch(`${srv.baseUrl}/api/otp/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ countryCode: '+91', phoneNumber: '9876543210' }),
+    });
+    assert.equal(request.status, 201);
+    const challenge = (await request.json()) as { challengeId: string; devTestCode: string };
+    const wrongCode = challenge.devTestCode === '000000' ? '111111' : '000000';
+
+    const attempts = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        fetch(`${srv.baseUrl}/api/otp/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ challengeId: challenge.challengeId, code: wrongCode }),
+        }),
+      ),
+    );
+    const statuses = attempts.map((response) => response.status);
+    assert.equal(statuses.filter((status) => status === 400).length, 5);
+    assert.equal(statuses.filter((status) => status === 429).length, 3);
+
+    const sqlite = new DatabaseSync(path.join(tmpDir, 'concurrent.db'));
+    const row = sqlite.prepare('SELECT attempts FROM otp_challenges WHERE id = ?')
+      .get(challenge.challengeId) as { attempts: number };
+    assert.equal(row.attempts, 5);
+    sqlite.close();
+  } finally {
+    await srv.close();
+    resetDatabaseCacheForTests();
+    if (previous.sqlitePath === undefined) delete process.env.CAN_SQLITE_PATH;
+    else process.env.CAN_SQLITE_PATH = previous.sqlitePath;
+    if (previous.hmacKey === undefined) delete process.env.PHONE_LOOKUP_HMAC_KEY;
+    else process.env.PHONE_LOOKUP_HMAC_KEY = previous.hmacKey;
+    if (previous.provider === undefined) delete process.env.OTP_PROVIDER;
+    else process.env.OTP_PROVIDER = previous.provider;
+    if (previous.nodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous.nodeEnv;
+    if (previous.supabaseUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = previous.supabaseUrl;
+    if (previous.supabaseSecret === undefined) delete process.env.SUPABASE_SECRET_KEY;
+    else process.env.SUPABASE_SECRET_KEY = previous.supabaseSecret;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
