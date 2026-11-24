@@ -14,7 +14,7 @@
 4. **Single-Instance Local SQLite Store for Transient OTP/Session/Rate-Limit Data**
    - Only `public.phone_registrations` is stored in remote Supabase (per the constraint not to create extra remote tables).
    - `otp_challenges`, `verified_sessions`, and `rate_limit_events` are stored in local `node:sqlite` (`data/can-protection.db` or `CAN_SQLITE_PATH`).
-   - Consequence: Multi-instance horizontal scaling or stateless serverless functions (e.g., Vercel Functions without sticky state) will not share OTP challenges, active sessions, or rate-limit counters across instances unless those tables or a shared store (e.g., Redis / Postgres tables) are later introduced.
+   - Consequence: Multi-instance horizontal scaling and stateless serverless platforms cannot safely share OTP challenges, active sessions, or rate-limit counters. The production environment validator now blocks these deployments; a shared store (e.g., Redis or PostgreSQL tables) is required before enabling them.
 
 5. **HMAC Key Rotation Limitation (`PHONE_LOOKUP_HMAC_KEY`)**
    - Because raw phone numbers are intentionally never stored, changing `PHONE_LOOKUP_HMAC_KEY` without an online migration/re-hashing plan will prevent lookups from matching previously stored `phone_number_hash` rows.
