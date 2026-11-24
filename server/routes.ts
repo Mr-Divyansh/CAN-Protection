@@ -346,8 +346,15 @@ export function createApiRouter() {
           }
 
           const nowIso = new Date(nowMs).toISOString();
-          const consumed = await db.consumeOtpChallenge(challenge.id, nowIso);
+          const consumed = await db.consumeOtpChallenge(challenge.id, nowIso, challenge.max_attempts);
           if (!consumed) {
+            const latestChallenge = await db.getOtpChallengeById(challenge.id);
+            if (latestChallenge && latestChallenge.attempts >= latestChallenge.max_attempts) {
+              res.status(429).json({
+                error: 'Maximum verification attempts exceeded. Please request a new verification code.',
+              });
+              return;
+            }
             res.status(409).json({
               error: 'This verification code has already been used. Request a new code if needed.',
             });
