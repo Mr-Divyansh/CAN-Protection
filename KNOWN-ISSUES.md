@@ -23,7 +23,7 @@
    - `PRIVACY-POLICY.md`, `TERMS.md`, `CONTACT.md`, and `src/components/LegalModal.tsx` contain `[TODO]` / pending-review notices for entity operator name, official support/privacy/security contacts, data retention schedule, and governing jurisdiction.
 
 7. **Migration History & Legacy SQL**
-   - `supabase/migrations/001_init_can_protection.sql` is an older schema containing raw normalized phone-number columns and does not match the current `public.phone_registrations` schema. Do not run `supabase db push` until the remote migration history is reconciled and a clean baseline is prepared. The live table must remain server-only with RLS enabled and no anon/authenticated policies.
+   - `supabase/legacy/001_init_can_protection.sql` is an older schema containing raw normalized phone-number columns and does not match the current `public.phone_registrations` schema. The legacy file has been archived outside the active migrations directory. The two tracked timestamped migration files now mirror the connected project's recorded migration versions; verify `supabase migration list` before any future push. The live table must remain server-only with RLS enabled and no anon/authenticated policies.
 
 8. **Lockfile & Automated Cleanup**
    - The workspace includes `bun.lock`; on Windows PCs using `npm`, running `npm install` will generate `package-lock.json`.
