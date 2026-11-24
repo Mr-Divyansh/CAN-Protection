@@ -61,6 +61,7 @@ export async function dispatchOtpCode(e164Phone: string): Promise<{
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: body.toString(),
+        signal: AbortSignal.timeout(10_000),
       },
     );
 
