@@ -423,3 +423,60 @@ test('OTP expiry (410), brute-force lockout (429), unknown challenge (404), API 
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('concurrent OTP requests reserve IP limits atomically and ignore spoofed X-Forwarded-For', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'can-rate-limit-test-'));
+  const sqliteFile = path.join(tmpDir, 'rate-limit.db');
+  const keys = [
+    'CAN_SQLITE_PATH',
+    'PHONE_LOOKUP_HMAC_KEY',
+    'OTP_PROVIDER',
+    'NODE_ENV',
+    'VERCEL',
+    'SUPABASE_URL',
+    'SUPABASE_SECRET_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'CAN_SERVER_SECRET',
+  ] as const;
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+
+  process.env.CAN_SQLITE_PATH = sqliteFile;
+  process.env.PHONE_LOOKUP_HMAC_KEY = 'test-only-hmac-key-at-least-32-chars!!';
+  process.env.OTP_PROVIDER = 'demo';
+  process.env.NODE_ENV = 'development';
+  for (const key of ['VERCEL', 'SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'CAN_SERVER_SECRET']) {
+    delete process.env[key];
+  }
+  resetDatabaseCacheForTests();
+
+  const srv = await startTestServer();
+  try {
+    const responses = await Promise.all(
+      Array.from({ length: 15 }, (_, index) => {
+        const suffix = String(1000 + index);
+        return fetch(`${srv.baseUrl}/api/otp/request`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // These untrusted values must not create 15 separate client identities.
+            'X-Forwarded-For': `198.51.100.${index + 1}`,
+          },
+          body: JSON.stringify({ countryCode: '+91', phoneNumber: `987654${suffix}` }),
+        });
+      }),
+    );
+
+    assert.equal(responses.filter((response) => response.status === 201).length, 12);
+    assert.equal(responses.filter((response) => response.status === 429).length, 3);
+  } finally {
+    await srv.close();
+    resetDatabaseCacheForTests();
+    for (const key of keys) {
+      const value = previous[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
