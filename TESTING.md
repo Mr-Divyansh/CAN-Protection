@@ -1,9 +1,13 @@
 # CAN Protection — Test & Verification Report
 
-**Test Date**: 2026-11-24  
+**Baseline Test Date**: 2026-11-24  
 **Runtime**: Node.js `v22.23.5` + Express 4 + Vite 8 + React 19
 
-## 1. Executed Automated Tests (`npm test`)
+## Verification status
+
+The results below describe the original baseline run before the hardening branch changes. They are historical evidence only; they do not certify the current branch. The hardening branch adds stricter production environment tests and a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs typecheck, automated tests, and the production frontend build on pushes and pull requests. Mark this report current only after that workflow completes successfully.
+
+## 1. Previous Baseline Automated Tests (`npm test`)
 
 Command: `tsx --test src/lib/phone.test.ts src/lib/otp-policy.test.ts server/env.test.ts server/db.test.ts server/routes.test.ts`
 
@@ -11,7 +15,7 @@ Command: `tsx --test src/lib/phone.test.ts src/lib/otp-policy.test.ts server/env
 | --- | --- | --- |
 | `src/lib/phone.test.ts` | Country-aware E.164 normalization, leading-zero/`+91` stripping, invalid prefix/letter rejection, `last4` extraction, `maskPhoneParts` | **PASS** (5/5 tests) |
 | `src/lib/otp-policy.test.ts` | Non-plaintext OTP HMAC + `timingSafeEqual`, keyed E.164 `hashPhoneLookup`, replay/expiry/brute-force rules, sliding-window rate limiting, registration transitions | **PASS** (5/5 tests) |
-| `server/env.test.ts` | Optional Twilio/MSG91 vars when `OTP_PROVIDER=demo`, fail-closed checks for `twilio`/`msg91`/unknown providers, `NODE_ENV=production` / `VERCEL=1` demo block unless `ALLOW_DEV_OTP_DEMO=true`, `SUPABASE_SECRET_KEY` + `PHONE_LOOKUP_HMAC_KEY` validation, local SQLite fallback | **PASS** (9/9 tests) |
+| `server/env.test.ts` | Optional Twilio/MSG91 vars when `OTP_PROVIDER=demo`, fail-closed checks for `twilio`/`msg91`/unknown providers, `NODE_ENV=production` / `VERCEL=1` demo block unless `ALLOW_DEV_OTP_DEMO=true`, `SUPABASE_SECRET_KEY` + `PHONE_LOOKUP_HMAC_KEY` validation, development-only SQLite fallback | **PASS** (9/9 tests) |
 | `server/db.test.ts` | Mocked `@supabase/supabase-js` `public.phone_registrations` 10-column schema lock, explicit `updated_at` on insert/activate/re-verify/deactivate, `23505` insert-race recovery, `verifySchema()` error propagation, SQLite legacy raw-phone table cleanup | **PASS** (4/4 tests) |
 | `server/routes.test.ts` | Full HTTP lifecycle (`401` unauth, `400` bad phone, `201` anti-enumeration OTP request, `429` cooldown, `400` wrong code, `200` verify, `409` replay, `410` expired OTP, `429` brute-force lockout, `404` unknown challenge & `/api/*`, `200` status/activate/re-activate/confirm-deactivate/logout, zero raw phone rows in SQLite, `503` missing `PHONE_LOOKUP_HMAC_KEY`, `503` production demo block) | **PASS** (3/3 integration tests) |
 
@@ -23,8 +27,8 @@ Command: `tsx --test src/lib/phone.test.ts src/lib/otp-policy.test.ts server/env
 - `npm run lint` (`tsc --noEmit`): **PASS** (zero TypeScript errors).
 - Frontend secret & cleanup scan (`src/`, `index.html`, `vite.config.ts`): Confirmed zero references to `SUPABASE_*`, `PHONE_LOOKUP_HMAC_KEY`, `service_role`, `@google/genai`, or `aistudio`.
 - Production server startup (`NODE_ENV=production node server.ts`):
-  - Verified with `ALLOW_DEV_OTP_DEMO=true` on port `3199`: served SPA HTML (`200`) and `/api/health` (`200`, `ok: true`, `storageBackend: "local_sqlite_dev"`).
-  - Verified without `ALLOW_DEV_OTP_DEMO` on port `3198`: `/api/health` returned `otpConfigured: false`, `ok: false`, confirming fail-closed production OTP behavior.
+  - Historical baseline: a development override was previously used to start production mode against local SQLite. This behavior is now intentionally blocked by the hardening branch.
+  - The current branch must be verified by CI; production additionally requires Supabase, a persistent server secret, a persistent single-instance SQLite path, and a real OTP provider. Vercel/serverless is rejected.
 
 ## 3. Browser UI & Console Verification (Headless Chromium)
 
