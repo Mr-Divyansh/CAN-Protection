@@ -23,8 +23,8 @@ Intended user flow:
   - In development, `server.ts` mounts Vite middleware on port `3000`.
   - In production (`NODE_ENV=production`), `server.ts` serves `/api/*` and static files from `dist/`.
 - **Persistence Split (`server/db.ts`)**:
-  - **Registrations (`public.phone_registrations`)**: Connects via `@supabase/supabase-js` using server-only `SUPABASE_URL` + `SUPABASE_SECRET_KEY` when configured, or falls back locally to `phone_registrations` inside `node:sqlite` (`data/can-protection.db`).
-  - **Transient Security State (`otp_challenges`, `verified_sessions`, `rate_limit_events`)**: Stored in local `node:sqlite` (`data/can-protection.db` or `CAN_SQLITE_PATH`). No raw or normalized E.164 phone numbers are stored in any table.
+  - **Registrations (`public.phone_registrations`)**: Production requires the private Supabase table via server-only `SUPABASE_URL` + `SUPABASE_SECRET_KEY`. Local `node:sqlite` registration storage is development-only.
+  - **Transient Security State (`otp_challenges`, `verified_sessions`, `rate_limit_events`)**: Stored in local `node:sqlite`. Production is restricted to a single-instance persistent Node host with `CAN_ALLOW_PRODUCTION_SQLITE=true` and an absolute `CAN_SQLITE_PATH`; Vercel/serverless and multi-instance hosting are blocked until a shared store is implemented. No raw or normalized E.164 phone numbers are stored in any table.
 
 ---
 
@@ -59,7 +59,7 @@ Intended user flow:
   set NODE_ENV=production   # Windows cmd (or $env:NODE_ENV="production" in PowerShell)
   npm run start
   ```
-  *(Note: In `NODE_ENV=production`, real OTP provider variables are required unless `ALLOW_DEV_OTP_DEMO=true` is intentionally set for staging.)*
+  *(Production requires Supabase, real OTP provider credentials, a persistent `CAN_SERVER_SECRET` (32+ characters), and the explicit persistent SQLite settings above. Demo OTP is never allowed in production.)*
 
 ---
 
@@ -70,11 +70,11 @@ Intended user flow:
 | `SUPABASE_SECRET_KEY` | Server only | Using Supabase | Privileged server key (`sb_secret_...` or legacy `SUPABASE_SERVICE_ROLE_KEY`) |
 | `PHONE_LOOKUP_HMAC_KEY` | Server only | Using Supabase | Secret >= 16 chars (32+ bytes recommended) for `HMAC-SHA256` E.164 phone lookup |
 | `OTP_PROVIDER` | Server only | Production (always); Dev (`demo` default) | `demo`, `twilio`, or `msg91` |
-| `ALLOW_DEV_OTP_DEMO` | Server only | Optional staging override | Set `true` only if intentionally permitting demo OTP under `NODE_ENV=production` |
+| `CAN_ALLOW_PRODUCTION_SQLITE` / `CAN_SQLITE_PATH` | Server only | Single-instance production Node host only | Explicitly enables persistent local SQLite for transient state; never use on Vercel/serverless |
 | `TWILIO_ACCOUNT_SID` / `AUTH_TOKEN` / `FROM_NUMBER` | Server only | `OTP_PROVIDER=twilio` | Twilio Programmable SMS delivery |
 | `MSG91_AUTH_KEY` / `MSG91_TEMPLATE_ID` | Server only | `OTP_PROVIDER=msg91` | MSG91 OTP SMS delivery |
-| `CAN_SERVER_SECRET` | Server only | Production recommended | Persistent secret for OTP/session/IP HMACs (falls back to in-memory random bytes if unset) |
-| `PORT` / `APP_URL` / `CAN_SQLITE_PATH` | Server only | Optional | HTTP port (`3000`), hosting URL, or custom SQLite file path |
+| `CAN_SERVER_SECRET` | Server only | Required in production | Persistent random secret, at least 32 characters, for OTP/session/IP HMACs |
+| `PORT` / `APP_URL` / `TRUST_PROXY_HOPS` | Server only | Optional | HTTP port (`3000`), hosting URL, or verified reverse-proxy hop count (default `0`) |
 
 **Never** prefix any of these secrets with `VITE_` or commit `.env` files to Git.
 
@@ -118,7 +118,7 @@ npm run build # Builds production SPA bundle into dist/
 ---
 
 ## 10. Current Status Summary
-- **Completed & Verified Locally**: Full responsive UI (dark/light, desktop/mobile) with approved CAN Protection branding, full OTP/auth/registration lifecycle, zero raw phone storage, production demo-mode fail-closed guards, mocked Supabase 10-column adapter tests, `tsc --noEmit`, and `vite build`.
+- **Completed & Verified Locally**: Full responsive UI (dark/light, desktop/mobile) with approved CAN Protection branding, full OTP/auth/registration lifecycle, zero raw phone storage, unconditional production demo-mode block and production storage guards, mocked Supabase 10-column adapter tests, `tsc --noEmit`, and `vite build`.
 - **Verified In-Memory Against Remote Supabase**: Tested in-memory against `https://edykghafxrrvsfbcxnkt.supabase.co` (`GET /api/health` -> `ok: true`, `storageBackend: "supabase_postgres"`, `schemaVerified: true`, and live status/activate/deactivate round-trip).
 - **Incomplete / Remaining**: Rotate exposed Supabase secret key, configure `.env` / hosting Secrets (`SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PHONE_LOOKUP_HMAC_KEY`, `CAN_SERVER_SECRET`), configure live SMS (`OTP_PROVIDER=twilio` or `msg91` + India DLT), finalize legal/contact placeholders (`PRIVACY-POLICY.md`, `TERMS.md`, `CONTACT.md`, `LegalModal.tsx`), and decide multi-instance storage for transient OTP/session tables if deploying serverless/horizontally scaled. See `KNOWN-ISSUES.md`.
 
@@ -142,7 +142,7 @@ Before proposing or making ANY code changes, follow this exact workflow:
    - Never store raw or normalized E.164 phone numbers in `public.phone_registrations` or any DB table (HMAC-SHA256 hash + `phone_last4` + `country_code` only).
    - Keep `public.phone_registrations` RLS enabled with zero public/anon/authenticated policies and access it exclusively server-side via `SUPABASE_SECRET_KEY`.
    - Keep `SUPABASE_SECRET_KEY`, `PHONE_LOOKUP_HMAC_KEY`, `CAN_SERVER_SECRET`, and SMS credentials strictly server-side; never expose them to `src/` or `VITE_*`.
-   - Keep `OTP_PROVIDER=demo` disabled in production unless explicitly permitted, and fail closed when required credentials are missing.
+   - Never permit demo OTP in production. Require real SMS credentials, Supabase, persistent secrets, and the supported single-instance Node runtime.
 6. Implement changes in small, surgical, testable steps that preserve existing working features and approved CAN Protection branding.
 7. After every change, run `npm test`, `npm run lint`, and `npm run build` (and verify live endpoints/UI when applicable).
 8. Report only actual observed test outputs, build results, and any remaining blockers—never invent project state or claim unverified success.
