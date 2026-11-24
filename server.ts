@@ -8,7 +8,13 @@ import { createApiRouter } from './server/routes.ts';
 
 export async function createApp() {
   const app = express();
-  app.set('trust proxy', 1);
+  const configuredProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? '0');
+  const trustProxy = Number.isInteger(configuredProxyHops) && configuredProxyHops >= 0 && configuredProxyHops <= 3
+    ? configuredProxyHops
+    : false;
+  // Trust no proxy by default. Set TRUST_PROXY_HOPS only to the verified number
+  // of reverse proxies in front of this server.
+  app.set('trust proxy', trustProxy);
   app.disable('x-powered-by');
 
   app.use((_req, res, next) => {
