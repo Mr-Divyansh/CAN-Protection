@@ -2,7 +2,20 @@
 
 **Protect Yourself. Stay Connected.**
 
-CAN Protection is a privacy-first cybersecurity web application for **mobile-number ownership verification** and **call-safety registration status management**.
+CAN Protection is a privacy-first cybersecurity web application for **mobile-number ownership verification** and **registration-status management**. It provides an OTP-ready flow to verify number ownership and manage a registration record.
+
+## About
+
+CAN Protection focuses on privacy-first mobile-number ownership verification and registration-state management. Phone numbers are normalized in memory and represented in storage by keyed hashes and masked digits. The project is built with React, TypeScript, Vite, Express, and Supabase.
+
+**Project website:** https://can-protection.vercel.app  
+**Repository:** https://github.com/Mr-Divyansh/CAN-Protection
+
+## Current Deployment Status
+
+The current Vercel deployment is a **frontend preview** built with Vite. The deployed build runs `vite build`; this repository does not currently contain Vercel API function routes, so the Express API in `server.ts` is not served by that static deployment. OTP requests, verification, and registration-management API actions are therefore not operational on the current Vercel URL yet. Do not enter real phone numbers or OTPs until the backend is connected and end-to-end tested.
+
+Before enabling the backend on Vercel, transient OTP challenges, sessions, and rate-limit state must move from local SQLite to a shared store, and the API must be deployed through a supported serverless integration. The current production validator intentionally rejects Vercel while those requirements remain unmet.
 
 ## Implemented Features
 
@@ -30,7 +43,7 @@ Registering a mobile number in CAN Protection does **not** independently block i
 - **3. Run & verify**:
   ```bash
   npm run dev      # Start Express + Vite dev server on http://localhost:3000
-  npm test         # Run all 26 unit, DB adapter, and HTTP API tests
+  npm test         # Run all 30 unit, DB adapter, and HTTP API tests
   npm run lint     # Run TypeScript check (tsc --noEmit)
   npm run build    # Build production frontend bundle to dist/
   npm run start    # Start production server (requires Supabase, real OTP, persistent secrets, and supported single-instance Node hosting)
