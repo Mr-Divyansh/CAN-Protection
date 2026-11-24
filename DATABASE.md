@@ -5,7 +5,7 @@
 - **Active Private Table**: `public.phone_registrations` (already created on the target project)
 - **Server Client**: `@supabase/supabase-js` initialized server-side only (`server/db.ts`) using `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (with fallback recognition for legacy `SUPABASE_SERVICE_ROLE_KEY`). Client keys are cached by URL, secret digest, and `PHONE_LOOKUP_HMAC_KEY` configuration.
 
-> **Note on Legacy Migration File**: `supabase/migrations/001_init_can_protection.sql` is a legacy migration with raw normalized phone columns and is not aligned with the current schema. Do not run it or use `supabase db push` until remote migration history is reconciled and a safe baseline is prepared. Runtime registration storage integrates directly with the existing `public.phone_registrations` table.
+> **Note on Legacy Migration File**: `supabase/legacy/001_init_can_protection.sql` is a legacy migration with raw normalized phone columns and is not aligned with the current schema. Do not run it or use `supabase db push` until remote migration history is reconciled and a safe baseline is prepared. Runtime registration storage integrates directly with the existing `public.phone_registrations` table.
 
 ## Existing Table Schema: `public.phone_registrations`
 
