@@ -320,13 +320,20 @@ export function createApiRouter() {
           });
           return;
         case 'invalid_code':
-          await db.incrementOtpAttempts(challenge.id);
+          const attempts = await db.incrementOtpAttempts(challenge.id, challenge.max_attempts);
+          if (attempts === null) {
+            res.status(429).json({
+              error: 'Maximum verification attempts exceeded. Please request a new verification code.',
+            });
+            return;
+          }
+          const remainingAttempts = Math.max(0, challenge.max_attempts - attempts);
           res.status(400).json({
             error:
-              evaluation.remainingAttempts > 0
-                ? `Incorrect verification code. ${evaluation.remainingAttempts} attempt${evaluation.remainingAttempts === 1 ? '' : 's'} remaining.`
+              remainingAttempts > 0
+                ? `Incorrect verification code. ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`
                 : 'Incorrect verification code. Maximum attempts reached; please request a new code.',
-            remainingAttempts: evaluation.remainingAttempts,
+            remainingAttempts,
           });
           return;
         case 'verified': {
