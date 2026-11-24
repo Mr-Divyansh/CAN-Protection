@@ -33,12 +33,9 @@ const MAX_VERIFY_ATTEMPTS_PER_IP = 25;
 const MAX_MUTATIONS_PER_PHONE = 10;
 
 function getClientIpHash(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  const rawIp = Array.isArray(forwarded)
-    ? forwarded[0]
-    : typeof forwarded === 'string'
-      ? forwarded.split(',')[0].trim()
-      : req.ip || 'unknown';
+  // Express resolves req.ip using only explicitly configured trusted proxy hops.
+  // Never trust a caller-supplied X-Forwarded-For value directly.
+  const rawIp = req.ip || req.socket.remoteAddress || 'unknown';
   return crypto.createHmac('sha256', getServerPepper()).update(`ip:${rawIp}`).digest('hex');
 }
 
