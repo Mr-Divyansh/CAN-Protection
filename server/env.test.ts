@@ -69,6 +69,16 @@ test('Supabase requires URL, secret key, and HMAC key', () => {
   }
 });
 
+test('Supabase rejects a weak phone lookup HMAC key', () => {
+  const result = validateStorageEnvironment({
+    SUPABASE_URL: 'https://example.supabase.co',
+    SUPABASE_SECRET_KEY: 'sb_secret_example_server_only_key',
+    PHONE_LOOKUP_HMAC_KEY: 'too-short-key',
+  });
+  assert.equal(result.valid, false);
+  if (!result.valid) assert.ok(result.missingVars.includes('PHONE_LOOKUP_HMAC_KEY'));
+});
+
 test('production Supabase on a single-instance Node host requires explicit persistent SQLite path', () => {
   const base = {
     NODE_ENV: 'production',
