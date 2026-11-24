@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
 import { validateOtpEnvironment, validateStorageEnvironment } from './env.ts';
 
 const absoluteSqlitePath = process.platform === 'win32' ? 'C:\\can-data\\can.db' : '/var/lib/can-protection/can.db';
@@ -76,6 +75,7 @@ test('production Supabase on a single-instance Node host requires explicit persi
     SUPABASE_URL: 'https://example.supabase.co',
     SUPABASE_SECRET_KEY: 'sb_secret_example_server_only_key',
     PHONE_LOOKUP_HMAC_KEY: '0123456789abcdef0123456789abcdef',
+    CAN_SERVER_SECRET: 'persistent-production-server-secret-32chars',
   };
   assert.equal(validateStorageEnvironment(base).valid, false);
   const allowed = validateStorageEnvironment({
