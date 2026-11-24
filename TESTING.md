@@ -5,7 +5,7 @@
 
 ## Verification status
 
-GitHub Actions run [ #45443697098](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45443413351) passed for commit `3ddbd888392367f14bd9a854935aa20177dca560`: frozen dependency installation, TypeScript check, 30 automated tests, and production frontend build.
+GitHub Actions run [#45443697098](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45443697098) passed for commit `3ddbd888392367f14bd9a854935aa20177dca560`: frozen dependency installation, TypeScript check, 30 automated tests, and production frontend build.
 
 ## 1. Automated Tests (`npm test`)
 
