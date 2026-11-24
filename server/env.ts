@@ -145,7 +145,7 @@ export function validateStorageEnvironment(
   return {
     valid: true,
     backend: 'supabase_postgres',
-    supabaseUrl: env.SUPABASE_URL!.trim().replace(/\\/+$/, ''),
+    supabaseUrl: env.SUPABASE_URL!.trim().replace(/\/+$/, ''),
     supabaseSecretKey: rawSecret,
     phoneLookupHmacKey: hmacKey,
   };
