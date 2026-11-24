@@ -8,6 +8,12 @@ CAN Protection runs as a **React 19 + Vite 8 + TypeScript** frontend paired with
 - **Reverse Proxy Trust**: `TRUST_PROXY_HOPS` defaults to `0` (no forwarded headers trusted). Set it only to the verified number of trusted reverse proxies; never trust arbitrary client-supplied `X-Forwarded-For` values.
 - **Windows & Cross-Platform Compatibility**: `server.ts` resolves paths with `fileURLToPath(import.meta.url)` and `npm test` invokes explicit test paths without POSIX shell globs so development works smoothly on Windows, macOS, and Linux.
 
+## Current Vercel Deployment Status
+
+The current Vercel production deployment at `https://can-protection.vercel.app` was built from `main` with `bun run build` (`vite build`). That produces the static frontend only. There is no `api/` function directory or `vercel.json` routing the Express app, so `server.ts` is not running as the deployed API. The frontend's `/api/*` calls will not reach the Express routes in this deployment. Treat this as a frontend preview, not a working OTP or registration service.
+
+Do not enable production phone verification on Vercel until the API is deployed and transient OTP challenges, sessions, and rate-limit state are moved from local SQLite to a shared store. The current production environment validator deliberately rejects Vercel/serverless execution for this architecture.
+
 ## External Services Required for Production
 
 1. **Supabase PostgreSQL (`edykghafxrrvsfbcxnkt`)**:
