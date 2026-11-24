@@ -99,7 +99,7 @@ export interface CanDatabase extends PhoneRegistrationsStore {
   }): Promise<void>;
   getOtpChallengeById(id: string): Promise<DbOtpChallengeRow | null>;
   incrementOtpAttempts(id: string, maxAttempts: number): Promise<number | null>;
-  consumeOtpChallenge(id: string, consumedAt: string): Promise<boolean>;
+  consumeOtpChallenge(id: string, consumedAt: string, maxAttempts: number): Promise<boolean>;
   createVerifiedSession(input: {
     id: string;
     tokenHash: string;
@@ -329,10 +329,10 @@ function createSqliteTransientHandlers(db: DatabaseSync): Pick<
       return result ? Number(result.attempts) : null;
     },
 
-    async consumeOtpChallenge(id, consumedAt) {
+    async consumeOtpChallenge(id, consumedAt, maxAttempts) {
       const result = db
-        .prepare('UPDATE otp_challenges SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL')
-        .run(consumedAt, id);
+        .prepare('UPDATE otp_challenges SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL AND attempts < ?')
+        .run(consumedAt, id, maxAttempts);
       return Number(result.changes) > 0;
     },
 
