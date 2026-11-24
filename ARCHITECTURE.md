@@ -9,7 +9,7 @@ Browser (React 19 + TypeScript + Vite 8 + Tailwind CSS v4)
 Express Server (server.ts + server/routes.ts)
    ├── Input Validation & E.164 Normalization (src/lib/phone.ts)
    ├── Server-Only HMAC-SHA256 Phone Lookup (src/lib/otp-policy.ts + PHONE_LOOKUP_HMAC_KEY)
-   ├── OTP Security Policy & Rate Limits (src/lib/otp-policy.ts + server/otp-provider.ts)
+   ├── OTP Security Policy & Atomic Rate Limits (src/lib/otp-policy.ts + server/otp-provider.ts + SQLite transactions)
    ├── Short-Lived Bearer Session Verification (server/session.ts)
    └── Database Layer (server/db.ts)
          ├── Production Registration Store: @supabase/supabase-js -> public.phone_registrations
