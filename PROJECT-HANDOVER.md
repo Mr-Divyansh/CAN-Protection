@@ -33,7 +33,7 @@ Intended user flow:
 - `server/` — Backend API router, DB adapters, env validation, OTP providers, session auth, and server/DB tests.
 - `src/` — React UI, types, and pure shared validation/policy logic (`src/lib/phone.ts`, `src/lib/otp-policy.ts`).
 - `public/assets/` — Approved CAN Protection logo, dark/light assets, app icon, and favicon.
-- `supabase/migrations/001_init_can_protection.sql` — Preserved historical SQL reference (do not overwrite or duplicate; live Supabase uses `public.phone_registrations`).
+- `supabase/legacy/001_init_can_protection.sql` — Archived unsafe legacy schema; never execute. `supabase/migrations/` tracks the two migrations already applied to the connected project.
 - See `PROJECT-FILE-INDEX.md` for a full file-by-file directory map.
 
 ---
