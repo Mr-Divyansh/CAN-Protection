@@ -5,7 +5,7 @@
 
 ## Verification status
 
-GitHub Actions run [#45441058863](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45441058863) completed successfully for commit `032b5fdad5a6e39dd28458ddf20cb84616ee9ccb`. Dependency installation, TypeScript check, automated tests, and the production frontend build all passed. The tested commit contains all code hardening and migration changes; later branch commits only update documentation.
+The earlier GitHub Actions run passed the initial hardening baseline. A follow-up review then added atomic per-challenge OTP attempt enforcement, a concurrent-submission integration test, and a stronger HMAC minimum. The follow-up CI run is pending; results below must be refreshed after it completes.
 
 ## 1. Automated Tests (`npm test`)
 
@@ -15,11 +15,11 @@ Command: `tsx --test src/lib/phone.test.ts src/lib/otp-policy.test.ts server/env
 | --- | --- | --- |
 | `src/lib/phone.test.ts` | Country-aware E.164 normalization, leading-zero/`+91` stripping, invalid prefix/letter rejection, `last4` extraction, `maskPhoneParts` | **PASS** (5/5 tests) |
 | `src/lib/otp-policy.test.ts` | Non-plaintext OTP HMAC + `timingSafeEqual`, keyed E.164 `hashPhoneLookup`, replay/expiry/brute-force rules, sliding-window rate limiting, registration transitions | **PASS** (5/5 tests) |
-| `server/env.test.ts` | Optional Twilio/MSG91 vars when `OTP_PROVIDER=demo`, fail-closed checks for `twilio`/`msg91`/unknown providers, `NODE_ENV=production` / `VERCEL=1` demo block with no override, production Supabase requirement, persistent server secret and single-instance storage opt-in, `SUPABASE_SECRET_KEY` + `PHONE_LOOKUP_HMAC_KEY` validation, development-only SQLite fallback | **PASS** (9/9 tests) |
+| `server/env.test.ts` | Optional Twilio/MSG91 vars when `OTP_PROVIDER=demo`, fail-closed checks for `twilio`/`msg91`/unknown providers, `NODE_ENV=production` / `VERCEL=1` demo block with no override, production Supabase requirement, persistent server secret and single-instance storage opt-in, `SUPABASE_SECRET_KEY` + `PHONE_LOOKUP_HMAC_KEY` validation, development-only SQLite fallback | **PASS in baseline run** (9 tests; follow-up includes one additional weak-key test) |
 | `server/db.test.ts` | Mocked `@supabase/supabase-js` `public.phone_registrations` 10-column schema lock, explicit `updated_at` on insert/activate/re-verify/deactivate, `23505` insert-race recovery, `verifySchema()` error propagation, SQLite legacy raw-phone table cleanup | **PASS** (4/4 tests) |
-| `server/routes.test.ts` | Full HTTP lifecycle (`401` unauth, `400` bad phone, `201` anti-enumeration OTP request, `429` cooldown, `400` wrong code, `200` verify, `409` replay, `410` expired OTP, `429` brute-force lockout, `404` unknown challenge & `/api/*`, `200` status/activate/re-activate/confirm-deactivate/logout, zero raw phone rows in SQLite, `503` missing `PHONE_LOOKUP_HMAC_KEY`, `503` production demo block) | **PASS** (3/3 integration tests) |
+| `server/routes.test.ts` | Full HTTP lifecycle (`401` unauth, `400` bad phone, `201` anti-enumeration OTP request, `429` cooldown, `400` wrong code, `200` verify, `409` replay, `410` expired OTP, `429` brute-force lockout, `404` unknown challenge & `/api/*`, `200` status/activate/re-activate/confirm-deactivate/logout, zero raw phone rows in SQLite, `503` missing `PHONE_LOOKUP_HMAC_KEY`, `503` production demo block) | **PASS in baseline run** (3 integration tests; follow-up includes one additional concurrent-attempt test) |
 
-**Total Automated Tests**: **26/26 passing** (`0` failing, `0` skipped) in the hardening CI run.
+**Total Automated Tests**: 29 expected after follow-up changes; final pass count is pending the new CI run.
 
 ## 2. Build, Type-Check & Security Scans
 
