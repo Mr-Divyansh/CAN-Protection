@@ -1,0 +1,6 @@
+{
+  "name": "CAN Protection",
+  "description": "Mobile-number registration, ownership verification, and call-safety status management platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

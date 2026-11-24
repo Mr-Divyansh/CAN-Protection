@@ -1,31 +1,11 @@
 # CAN Protection — Security Requirements
 
-## Sensitive data
-Mobile numbers and verification data are sensitive. Collect only what is necessary.
-
-## Mandatory controls
-- Verify ownership before revealing registration status or changing it.
-- Validate and normalize phone numbers server-side.
-- Apply rate limits to OTP sending, OTP verification, and status-changing endpoints.
-- Use short-lived, single-use verification codes.
-- Never store OTPs as plaintext.
-- Keep provider credentials and database service-role secrets server-side.
-- Use least-privilege database access policies.
-- Do not place phone numbers or OTPs in URLs.
-- Do not log OTPs or full phone numbers.
-- Prevent number enumeration before ownership verification.
-- Require explicit confirmation before deactivation.
-- Use HTTPS in production.
-- Return safe user-facing errors; never expose stack traces or secrets.
-
-## Threats to test
-- OTP brute force and SMS flooding.
-- Unauthorized status lookup.
-- Changing another user's registration.
-- Replaying expired or reused OTPs.
-- Duplicate active registrations.
-- Direct database access that bypasses server authorization.
-- Accidental exposure through logs, analytics, or client bundles.
-
-## Release gate
-Do not launch real-number verification until provider configuration, rate limits, authorization, database policies, privacy copy, and failure handling have been reviewed.
+- Verify mobile-number ownership via OTP challenge and short-lived in-memory Bearer session before revealing or modifying `phone_registrations`.
+- Normalize all phone numbers to E.164 (`src/lib/phone.ts`) before hashing with server-only `PHONE_LOOKUP_HMAC_KEY` (`HMAC-SHA256`).
+- Never store raw or normalized E.164 phone numbers in any database table (`phone_registrations`, `otp_challenges`, `verified_sessions`, `rate_limit_events`); persist only `phone_number_hash` / `phone_hash`, `phone_last4`, and `country_code`. Because raw numbers are discarded, do not rotate `PHONE_LOOKUP_HMAC_KEY` without a planned migration/re-verification strategy.
+- Store OTPs and Bearer session tokens strictly as HMAC-SHA256 hashes (never plaintext) and verify OTP codes with `crypto.timingSafeEqual`.
+- Enforce 5-minute OTP expiry (`410`), max 5 verification attempts (`429`), atomic single-use replay consumption (`409` if already consumed), 30s resend cooldown, and sliding-window IP/number rate limits.
+- Fail closed (`503`) whenever production (`NODE_ENV=production` or `VERCEL=1`) lacks a configured real SMS provider (`OTP_PROVIDER=twilio` or `msg91`), unless `ALLOW_DEV_OTP_DEMO=true` is explicitly set for staging.
+- Require explicit confirmation (`{ confirm: true }`) for deactivation and explicitly update `updated_at` on every `phone_registrations` change.
+- Keep `SUPABASE_SECRET_KEY`, `PHONE_LOOKUP_HMAC_KEY`, `CAN_SERVER_SECRET`, and OTP provider keys strictly in server-side `process.env` (never exposed to browser bundles or responses).
+- Keep RLS enabled on `public.phone_registrations` intentionally with **zero** `anon`/`authenticated`/public access policies, accessing the table exclusively through the Express server using `SUPABASE_SECRET_KEY`.

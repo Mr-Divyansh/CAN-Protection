@@ -1,15 +1,6 @@
 CAN Protection — Development Loop
-
-Use this repeatable workflow for each task:
-
-1. Read PRD.md, DESIGN.md, ROLES.md, SECURITY.md, and MEMO.md before changing the project.
-2. Inspect the existing repository and identify what already works.
-3. State the task, affected files, assumptions, and risks.
-4. Implement the smallest complete change.
-5. Run relevant linting, type checks, tests, and build.
-6. Review desktop/mobile and dark/light behavior when UI changes.
-7. Check security and privacy implications when handling phone numbers, OTPs, sessions, or registration status.
-8. Update documentation and MEMO.md when decisions or behavior change.
-9. Summarize files changed, checks run, results, and remaining work.
-
-Never claim a feature is complete unless it is implemented and verified.
+1. Read PRD.md, DESIGN.md, SECURITY.md, and MEMO.md before modifying the project.
+2. Inspect current code and run existing tests before editing.
+3. Implement modular, secure changes with server-side validation.
+4. Run TypeScript checks (npm run lint), unit/API tests, production build (npm run build), and browser visual verification.
+5. Update TESTING.md, MEMO.md, and CHANGELOG.md honestly based on executed checks.

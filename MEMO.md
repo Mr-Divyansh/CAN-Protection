@@ -1,29 +1,25 @@
 # CAN Protection — Project Memo / Decision Log
 
-Use this file to record important decisions, assumptions, unresolved questions, and changes in scope.
+## Current Decisions
+- **Project Name**: CAN Protection (`Protect Yourself. Stay Connected.`)
+- **Product Type**: Responsive website (Desktop & Mobile, Dark & Light themes).
+- **Runtime Adaptation**: **React 19 + Vite 8 + TypeScript + Express (`server.ts`)** full-stack environment requiring Node.js `>= 22.18.0`.
+- **Database Strategy**: Dual adapter in `server/db.ts`:
+  - Uses `@supabase/supabase-js` with server-only `SUPABASE_URL` + `SUPABASE_SECRET_KEY` and HMAC-SHA256 phone lookup (`PHONE_LOOKUP_HMAC_KEY`) targeting existing private table `public.phone_registrations` on project `edykghafxrrvsfbcxnkt`.
+  - Uses local `node:sqlite` (`data/can-protection.db`) when Supabase variables are absent, plus local transient SQLite tables for short-lived `otp_challenges`, `verified_sessions`, and `rate_limit_events`.
+  - **Zero raw phone numbers** are persisted in any database table (`phone_number_hash`, `phone_last4`, and `country_code` only).
+- **OTP Verification Strategy**: Supports `demo`, `twilio`, and `msg91` providers (`server/env.ts` + `server/otp-provider.ts`). `OTP_PROVIDER=demo` requires zero Twilio/MSG91 credentials in development and fails closed under `NODE_ENV=production` / `VERCEL=1` unless `ALLOW_DEV_OTP_DEMO=true`.
 
-## Current decisions
-- Project name: CAN Protection.
-- Product type: website, not a mobile app.
-- Initial scope: mobile-number ownership verification and CAN Protection registration-status management.
-- Users can activate and deactivate their registration.
-- Approved logo and four-view UI reference are the visual source of truth.
-- Required themes: dark and light.
-- Required responsive targets: desktop and mobile.
-- Initial hosting target: free-tier deployment where practical; verify current provider limits before release.
-- Suggested stack: Next.js + TypeScript + Supabase + Vercel + GitHub.
+## Open Decisions (Require Project Owner Input)
+1. Rotate the `sb_secret_...` Supabase secret key and inject `SUPABASE_URL`, rotated `SUPABASE_SECRET_KEY`, `PHONE_LOOKUP_HMAC_KEY`, and `CAN_SERVER_SECRET` into local `.env` / hosting Secrets.
+2. Confirm live production SMS provider (`MSG91` vs `Twilio`) and India TRAI DLT registration for `+91` delivery.
+3. Confirm data retention/deletion policy, governing jurisdiction, and official contact details (`PRIVACY-POLICY.md`, `TERMS.md`, `CONTACT.md`, `src/components/LegalModal.tsx`).
+4. Decide whether single-instance stateful hosting suffices initially or if transient OTP/session tables should later migrate to Redis / dedicated Supabase tables for horizontal scaling.
 
-## Critical product limitation
-Registration in the CAN Protection database does not itself block incoming telecom calls. Any future call-blocking capability requires a real, authorized, technically supported integration and testing.
-
-## Open decisions
-- Which OTP provider will be used, and what are its current India delivery requirements and costs?
-- Is the first release a portfolio demo, limited pilot, or public service?
-- What retention/deletion policy will apply to phone-number data?
-- Which support/contact channel will be published?
-- What exact user-facing language will explain the difference between registration and actual call blocking?
-
-## Decision log
-| Date | Decision / change | Reason | Owner |
-|---|---|---|---|
-| YYYY-MM-DD | Add decisions here | Explain why | Project owner |
+## Decision Log
+| Date | Decision / Change | Reason | Owner |
+| --- | --- | --- | --- |
+| 2026-11-24 | Integrated existing `public.phone_registrations` via `@supabase/supabase-js` and `PHONE_LOOKUP_HMAC_KEY` | Aligns with existing private table schema on `edykghafxrrvsfbcxnkt` while guaranteeing zero raw phone numbers stored in DB | Engineering Team |
+| 2026-11-24 | Made Twilio/MSG91 env vars optional under `OTP_PROVIDER=demo` | Eliminates unnecessary third-party secrets in demo/local environments without weakening real-provider validation | Engineering Team |
+| 2026-11-24 | Stored verified session Bearer token in React memory only | Prevents token exposure via `localStorage`/XSS and eliminates cookie CSRF risks in iframe preview | Security Review |
+| 2026-11-24 | Completed final audit, production demo fail-closed guard, atomic OTP consumption, Windows portability, unused dep/file cleanup, and handover docs | Prepares CAN Protection for local Windows development, GitHub repository setup, and continued ChatGPT maintenance outside AI Studio | Final Handover Audit |
