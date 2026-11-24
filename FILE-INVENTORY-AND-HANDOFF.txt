@@ -1,0 +1,88 @@
+CAN PROTECTION — FILE INVENTORY AND HANDOFF NOTES
+====================================================
+
+FILES CREATED IN THIS PACKAGE
+-----------------------------
+README.md          Project overview and documentation index.
+PRD.md             Product requirements and MVP boundaries.
+DESIGN.md          Approved logo, palette, layout, responsive and theme requirements.
+ROLES.md           Solo-project responsibilities.
+MEMO.md            Decisions, assumptions, open questions, decision log.
+LOOP.txt           Repeatable development workflow.
+SECURITY.md        Security and privacy requirements.
+ARCHITECTURE.md    Proposed system architecture.
+DATABASE.md        Suggested data model and data-handling rules.
+API.md             Proposed backend behavior and authorization requirements.
+TESTING.md         Functional, security, and UI test plan.
+DEPLOYMENT.md      Hosting and release notes.
+CHANGELOG.md       Change history.
+.gitignore         Common generated files and secret exclusions.
+
+FILES / INPUTS THAT CANNOT BE COMPLETED HONESTLY WITHOUT MORE INFORMATION
+-------------------------------------------------------------------------
+1. .env.example
+   Why pending: Exact provider and project credentials/configuration are not selected.
+   Needed from owner/developer: chosen Supabase project URL and public anon key variable names,
+   OTP provider variable names, and any app URL/redirect variables. Never put real secret values
+   in this template or commit real credentials.
+
+2. PRIVACY-POLICY.md
+   Why pending: Must reflect the actual data collected, OTP vendor, retention period, hosting,
+   analytics, deletion process, and contact details. Draft only after implementation/provider choices.
+
+3. TERMS.md
+   Why pending: Must match the real service, limitations, jurisdiction, contact details, and
+   operational behavior. Obtain appropriate review before public launch.
+
+4. CONTACT.md (or real contact page content)
+   Why pending: No official support email/contact channel has been supplied.
+
+5. OTP-PROVIDER-SETUP.md
+   Why pending: No OTP provider has been selected. Provider setup, templates, sender IDs,
+   regional restrictions, and costs depend on that choice.
+
+6. LOGO ASSET FILES
+   Why pending: The approved logo was shared as an image in chat, but this package does not
+   contain a verified original transparent SVG/PNG asset. Export and add the approved logo files
+   from the source design. Do not recreate it from a screenshot if original assets are available.
+
+7. FINAL DATABASE MIGRATION
+   Why pending: The exact schema, constraints, RLS policies, and auth/session strategy must be
+   validated against the chosen Supabase project and implementation. DATABASE.md is a design note,
+   not an executed migration.
+
+8. REAL PRODUCTION SECURITY REVIEW
+   Why pending: A checklist cannot prove security. Review the implemented code, policies,
+   provider settings, and deployed endpoints before accepting real phone numbers.
+
+HANDOFF PROMPT
+--------------
+You are helping build CAN Protection. First read every file in this package, especially PRD.md,
+DESIGN.md, SECURITY.md, ARCHITECTURE.md, DATABASE.md, API.md, TESTING.md, and MEMO.md.
+
+Your job is to inspect the existing repository before making changes. Do not assume features are
+implemented merely because documentation describes them. Preserve the approved CAN Protection
+logo and the approved design reference. Build the MVP as a responsive website with desktop/mobile
+layouts and dark/light themes.
+
+The MVP supports mobile-number ownership verification, checking the user's own CAN Protection
+registration status, activating registration, and deactivating registration after confirmation.
+Never reveal status or allow changes before ownership verification. Enforce authorization and
+rate limits server-side. Never expose secrets or full phone numbers in URLs or logs.
+
+Critical truth: a database registration does not itself block telecom calls. Do not claim call
+blocking, spam detection, or carrier-level protection unless a real, authorized, tested integration
+is implemented.
+
+Before coding:
+1. Inspect the repository and report its current state.
+2. Identify missing inputs and blockers.
+3. Propose a small implementation plan aligned with PRD.md.
+4. Ask for decisions only when genuinely required; do not invent credentials, contact details,
+   provider choices, retention periods, or legal terms.
+
+After each implementation task, run relevant checks and report exact files changed, commands/tests
+run, results, and remaining work. Update documentation and MEMO.md when decisions change.
+Do not claim completion without evidence.
+
+END OF INVENTORY

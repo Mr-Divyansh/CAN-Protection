@@ -1,0 +1,15 @@
+CAN Protection — Development Loop
+
+Use this repeatable workflow for each task:
+
+1. Read PRD.md, DESIGN.md, ROLES.md, SECURITY.md, and MEMO.md before changing the project.
+2. Inspect the existing repository and identify what already works.
+3. State the task, affected files, assumptions, and risks.
+4. Implement the smallest complete change.
+5. Run relevant linting, type checks, tests, and build.
+6. Review desktop/mobile and dark/light behavior when UI changes.
+7. Check security and privacy implications when handling phone numbers, OTPs, sessions, or registration status.
+8. Update documentation and MEMO.md when decisions or behavior change.
+9. Summarize files changed, checks run, results, and remaining work.
+
+Never claim a feature is complete unless it is implemented and verified.
