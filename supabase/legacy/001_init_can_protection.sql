@@ -1,3 +1,9 @@
+-- ARCHIVED LEGACY MIGRATION — DO NOT EXECUTE.
+-- This file is retained only for historical reference. It creates legacy tables
+-- with raw normalized phone-number columns and does not match the current schema.
+-- The live project's migration history is represented by the timestamped files
+-- under supabase/migrations/.
+
 -- CAN Protection — Initial Supabase PostgreSQL Migration
 -- NOTE: Review and execute in Supabase SQL Editor or via Supabase CLI (`supabase db push`).
 -- Do not grant anon or authenticated direct table privileges; all reads/writes must go through

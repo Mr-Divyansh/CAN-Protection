@@ -8,14 +8,13 @@
    - `OTP_PROVIDER=twilio` and `OTP_PROVIDER=msg91` adapters are implemented, but live SMS delivery has not been tested because vendor credentials and India TRAI DLT registration have not been provisioned.
    - Until configured, development runs under `OTP_PROVIDER=demo` (`Development Test Mode`).
 
-3. **Ephemeral `CAN_SERVER_SECRET` Fallback**
-   - When `CAN_SERVER_SECRET` is unset, `server/session.ts` generates a random 32-byte key in memory at startup.
-   - Consequence: Pending OTP challenges and active Bearer sessions become invalid whenever the Node process restarts unless a persistent `CAN_SERVER_SECRET` is configured.
+3. **Persistent Production Session Secret Required**
+   - Production now refuses to start API operations unless `CAN_SERVER_SECRET` is a persistent random value of at least 32 characters. Development may still use an ephemeral fallback.
 
 4. **Single-Instance Local SQLite Store for Transient OTP/Session/Rate-Limit Data**
    - Only `public.phone_registrations` is stored in remote Supabase (per the constraint not to create extra remote tables).
    - `otp_challenges`, `verified_sessions`, and `rate_limit_events` are stored in local `node:sqlite` (`data/can-protection.db` or `CAN_SQLITE_PATH`).
-   - Consequence: Multi-instance horizontal scaling or stateless serverless functions (e.g., Vercel Functions without sticky state) will not share OTP challenges, active sessions, or rate-limit counters across instances unless those tables or a shared store (e.g., Redis / Postgres tables) are later introduced.
+   - Consequence: Multi-instance horizontal scaling and stateless serverless platforms cannot safely share OTP challenges, active sessions, or rate-limit counters. The production environment validator now blocks these deployments; a shared store (e.g., Redis or PostgreSQL tables) is required before enabling them.
 
 5. **HMAC Key Rotation Limitation (`PHONE_LOOKUP_HMAC_KEY`)**
    - Because raw phone numbers are intentionally never stored, changing `PHONE_LOOKUP_HMAC_KEY` without an online migration/re-hashing plan will prevent lookups from matching previously stored `phone_number_hash` rows.
@@ -23,6 +22,9 @@
 6. **Draft Legal & Contact Placeholders**
    - `PRIVACY-POLICY.md`, `TERMS.md`, `CONTACT.md`, and `src/components/LegalModal.tsx` contain `[TODO]` / pending-review notices for entity operator name, official support/privacy/security contacts, data retention schedule, and governing jurisdiction.
 
-7. **Lockfile & Automated Cleanup**
+7. **Migration History & Legacy SQL**
+   - `supabase/legacy/001_init_can_protection.sql` is an older schema containing raw normalized phone-number columns and does not match the current `public.phone_registrations` schema. The legacy file has been archived outside the active migrations directory. The two tracked timestamped migration files now mirror the connected project's recorded migration versions; verify `supabase migration list` before any future push. The live table must remain server-only with RLS enabled and no anon/authenticated policies.
+
+8. **Lockfile & Automated Cleanup**
    - The workspace includes `bun.lock`; on Windows PCs using `npm`, running `npm install` will generate `package-lock.json`.
    - Expired `otp_challenges` and revoked/expired `verified_sessions` rows in SQLite are not pruned by a background cron job (only `rate_limit_events` prunes old entries on write).

@@ -5,7 +5,7 @@
 - **Active Private Table**: `public.phone_registrations` (already created on the target project)
 - **Server Client**: `@supabase/supabase-js` initialized server-side only (`server/db.ts`) using `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (with fallback recognition for legacy `SUPABASE_SERVICE_ROLE_KEY`). Client keys are cached by URL, secret digest, and `PHONE_LOOKUP_HMAC_KEY` configuration.
 
-> **Note on Legacy Migration File**: `supabase/migrations/001_init_can_protection.sql` is preserved untouched for historical reference and is **not** modified or duplicated. Runtime registration storage integrates directly with the existing `public.phone_registrations` table.
+> **Note on Legacy Migration File**: `supabase/legacy/001_init_can_protection.sql` is a legacy migration with raw normalized phone columns and is not aligned with the current schema. Do not run it or use `supabase db push` until remote migration history is reconciled and a safe baseline is prepared. Runtime registration storage integrates directly with the existing `public.phone_registrations` table.
 
 ## Existing Table Schema: `public.phone_registrations`
 
@@ -27,7 +27,7 @@
 - **Duplicate Active Prevention**: Every activation checks `phone_number_hash` first, updates existing rows in place, and recovers cleanly from unique-constraint (`23505`) insert races.
 
 ## Transient Security Tables (Server-Side Local `node:sqlite`)
-Short-lived OTP challenges (`otp_challenges`), verified session hashes (`verified_sessions`), and sliding-window rate-limit buckets (`rate_limit_events`) remain isolated in local server transient `node:sqlite` (`data/can-protection.db` or `CAN_SQLITE_PATH`) so the app never assumes uncreated remote tables in `edykghafxrrvsfbcxnkt` and never stores raw phone numbers on disk.
+Short-lived OTP challenges (`otp_challenges`), verified session hashes (`verified_sessions`), and sliding-window rate-limit buckets (`rate_limit_events`) remain in local server transient `node:sqlite` (`data/can-protection.db` or `CAN_SQLITE_PATH`). Development may use the default path. Production is allowed only on a single-instance persistent Node host with `CAN_ALLOW_PRODUCTION_SQLITE=true`, an absolute `CAN_SQLITE_PATH`, and a persistent `CAN_SERVER_SECRET`; Vercel/serverless and multi-instance hosting are blocked until a shared store is implemented.
 
 ## Row Level Security (RLS)
 - `public.phone_registrations` keeps RLS enabled with **zero** public, `anon`, or `authenticated` access policies **by design**.

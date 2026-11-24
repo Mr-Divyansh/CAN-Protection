@@ -13,7 +13,7 @@
 
 ## Backend (`server/`)
 - `server/env.ts` — Validates `OTP_PROVIDER` (with fail-closed production check) and Supabase/HMAC storage configuration (`SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PHONE_LOOKUP_HMAC_KEY`).
-- `server/db.ts` — Dual database layer: `@supabase/supabase-js` adapter targeting `public.phone_registrations` (10-column schema lock + schema check) and local `node:sqlite` fallback + transient OTP/session/rate-limit tables.
+- `server/db.ts` — Dual database layer: `@supabase/supabase-js` adapter targeting `public.phone_registrations` (10-column schema lock + schema check) and development-only local registration fallback + local transient OTP/session/rate-limit tables (production opt-in is restricted to persistent single-instance Node hosts).
 - `server/session.ts` — Server pepper, `PHONE_LOOKUP_HMAC_KEY` accessor, Bearer token generation/hashing, and `requireVerifiedSession` middleware.
 - `server/otp-provider.ts` — OTP generation (`crypto.randomInt`) and dispatch adapters for `demo`, `twilio`, and `msg91`.
 - `server/routes.ts` — Express `/api/*` router (`/health`, `/otp/request`, `/otp/verify`, `/session/logout`, `/registration/status`, `/registration/activate`, `/registration/deactivate`, plus API 404 handler).
@@ -36,7 +36,7 @@
 - `public/assets/` — Approved official logo, dark/light assets, `app-icon.png`, and `favicon.png`.
 
 ## Database Reference (`supabase/`)
-- `supabase/migrations/001_init_can_protection.sql` — Preserved historical SQL reference (do not overwrite; live Supabase uses existing `public.phone_registrations`).
+- `supabase/legacy/001_init_can_protection.sql` — Archived legacy raw-phone schema; never execute. Timestamped files under `supabase/migrations/` mirror the live migration history.
 
 ## Documentation (`*.md`, `LOOP.txt`)
 - `README.md`, `PROJECT-HANDOVER.md`, `PROJECT-FILE-INDEX.md`, `KNOWN-ISSUES.md`, `ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `SECURITY.md`, `SECURITY-AUDIT-REPORT.md`, `TESTING.md`, `DEPLOYMENT.md`, `OTP-PROVIDER-SETUP.md`, `PRD.md`, `DESIGN.md`, `ROLES.md`, `MEMO.md`, `CHANGELOG.md`, `PRIVACY-POLICY.md`, `TERMS.md`, `CONTACT.md`, `LOOP.txt`.

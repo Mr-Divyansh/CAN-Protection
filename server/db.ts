@@ -83,6 +83,7 @@ export interface PhoneRegistrationsStore {
 export interface CanDatabase extends PhoneRegistrationsStore {
   backend: 'supabase_postgres' | 'local_sqlite_dev';
   getRateLimitTimestamps(bucketKey: string, sinceMs: number): Promise<number[]>;
+  reserveRateLimitEvent(bucketKey: string, createdAtMs: number, sinceMs: number, maxRequests: number): Promise<{ allowed: boolean; retryAfterSeconds: number }>;
   recordRateLimitEvent(bucketKey: string, createdAtMs: number, pruneBeforeMs: number): Promise<void>;
   getLatestChallengeForPhoneHash(phoneHash: string): Promise<DbOtpChallengeRow | null>;
   createOtpChallenge(input: {
@@ -147,7 +148,7 @@ function openInitializedSqlite(): DatabaseSync {
   const dbPath = resolveSqlitePath();
   const db = new DatabaseSync(dbPath);
 
-  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
 
   // Remove any legacy development tables that stored raw normalized phone numbers.
   if (tableExists(db, 'registrations')) {
@@ -226,6 +227,7 @@ function openInitializedSqlite(): DatabaseSync {
 function createSqliteTransientHandlers(db: DatabaseSync): Pick<
   CanDatabase,
   | 'getRateLimitTimestamps'
+  | 'reserveRateLimitEvent'
   | 'recordRateLimitEvent'
   | 'getLatestChallengeForPhoneHash'
   | 'createOtpChallenge'
@@ -244,6 +246,38 @@ function createSqliteTransientHandlers(db: DatabaseSync): Pick<
         )
         .all(bucketKey, sinceMs) as Array<{ created_at_ms: number }>;
       return rows.map((r) => Number(r.created_at_ms));
+    },
+
+    async reserveRateLimitEvent(bucketKey, createdAtMs, sinceMs, maxRequests) {
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        const rows = db
+          .prepare(
+            'SELECT created_at_ms FROM rate_limit_events WHERE bucket_key = ? AND created_at_ms > ? ORDER BY created_at_ms ASC',
+          )
+          .all(bucketKey, sinceMs) as Array<{ created_at_ms: number }>;
+
+        if (rows.length >= maxRequests) {
+          db.exec('ROLLBACK');
+          const oldest = Number(rows[0].created_at_ms);
+          const windowMs = createdAtMs - sinceMs;
+          return {
+            allowed: false,
+            retryAfterSeconds: Math.max(1, Math.ceil((windowMs - (createdAtMs - oldest)) / 1000)),
+          };
+        }
+
+        db.prepare('DELETE FROM rate_limit_events WHERE created_at_ms <= ?').run(sinceMs);
+        db.prepare('INSERT INTO rate_limit_events (bucket_key, created_at_ms) VALUES (?, ?)').run(
+          bucketKey,
+          createdAtMs,
+        );
+        db.exec('COMMIT');
+        return { allowed: true, retryAfterSeconds: 0 };
+      } catch (error) {
+        try { db.exec('ROLLBACK'); } catch { /* transaction may already be closed */ }
+        throw error;
+      }
     },
 
     async recordRateLimitEvent(bucketKey, createdAtMs, pruneBeforeMs) {

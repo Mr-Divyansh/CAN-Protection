@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import express, { type Request, type Response } from 'express';
 import {
   evaluateChallengeVerification,
-  evaluateRateLimit,
   evaluateRegistrationTransition,
   hashOtpCode,
   hashPhoneLookup,
@@ -33,12 +32,9 @@ const MAX_VERIFY_ATTEMPTS_PER_IP = 25;
 const MAX_MUTATIONS_PER_PHONE = 10;
 
 function getClientIpHash(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  const rawIp = Array.isArray(forwarded)
-    ? forwarded[0]
-    : typeof forwarded === 'string'
-      ? forwarded.split(',')[0].trim()
-      : req.ip || 'unknown';
+  // Express resolves req.ip using only explicitly configured trusted proxy hops.
+  // Never trust a caller-supplied X-Forwarded-For value directly.
+  const rawIp = req.ip || req.socket.remoteAddress || 'unknown';
   return crypto.createHmac('sha256', getServerPepper()).update(`ip:${rawIp}`).digest('hex');
 }
 
@@ -154,14 +150,10 @@ export function createApiRouter() {
       const phoneLookupHash = hashPhoneLookup(validation.e164, hmacKey);
       const ipHash = getClientIpHash(req);
 
-      const ipTimestamps = await db.getRateLimitTimestamps(
+      const ipLimit = await db.reserveRateLimitEvent(
         `otp_ip:${ipHash}`,
-        nowMs - RATE_WINDOW_MS,
-      );
-      const ipLimit = evaluateRateLimit(
-        ipTimestamps,
         nowMs,
-        RATE_WINDOW_MS,
+        nowMs - RATE_WINDOW_MS,
         MAX_OTP_REQUESTS_PER_IP,
       );
       if (!ipLimit.allowed) {
@@ -173,14 +165,10 @@ export function createApiRouter() {
         return;
       }
 
-      const phoneTimestamps = await db.getRateLimitTimestamps(
+      const phoneLimit = await db.reserveRateLimitEvent(
         `otp_phone:${phoneLookupHash}`,
-        nowMs - RATE_WINDOW_MS,
-      );
-      const phoneLimit = evaluateRateLimit(
-        phoneTimestamps,
         nowMs,
-        RATE_WINDOW_MS,
+        nowMs - RATE_WINDOW_MS,
         MAX_OTP_REQUESTS_PER_PHONE,
       );
       if (!phoneLimit.allowed) {
@@ -225,8 +213,6 @@ export function createApiRouter() {
         createdAt,
       });
 
-      await db.recordRateLimitEvent(`otp_ip:${ipHash}`, nowMs, nowMs - RATE_WINDOW_MS);
-      await db.recordRateLimitEvent(`otp_phone:${phoneLookupHash}`, nowMs, nowMs - RATE_WINDOW_MS);
 
       // Never disclose registration status prior to ownership verification.
       res.status(201).json({
@@ -274,14 +260,10 @@ export function createApiRouter() {
       const db = getDatabase();
       const nowMs = Date.now();
       const ipHash = getClientIpHash(req);
-      const ipVerifyTimestamps = await db.getRateLimitTimestamps(
+      const ipLimit = await db.reserveRateLimitEvent(
         `verify_ip:${ipHash}`,
-        nowMs - RATE_WINDOW_MS,
-      );
-      const ipLimit = evaluateRateLimit(
-        ipVerifyTimestamps,
         nowMs,
-        RATE_WINDOW_MS,
+        nowMs - RATE_WINDOW_MS,
         MAX_VERIFY_ATTEMPTS_PER_IP,
       );
       if (!ipLimit.allowed) {
@@ -293,7 +275,6 @@ export function createApiRouter() {
         return;
       }
 
-      await db.recordRateLimitEvent(`verify_ip:${ipHash}`, nowMs, nowMs - RATE_WINDOW_MS);
 
       const challenge = await db.getOtpChallengeById(challengeId.trim());
       if (!challenge) {
@@ -460,14 +441,10 @@ export function createApiRouter() {
 
         const db = getDatabase();
         const nowMs = Date.now();
-        const limitTimestamps = await db.getRateLimitTimestamps(
+        const rateLimit = await db.reserveRateLimitEvent(
           `mut:${session.phone_hash}`,
-          nowMs - RATE_WINDOW_MS,
-        );
-        const rateLimit = evaluateRateLimit(
-          limitTimestamps,
           nowMs,
-          RATE_WINDOW_MS,
+          nowMs - RATE_WINDOW_MS,
           MAX_MUTATIONS_PER_PHONE,
         );
         if (!rateLimit.allowed) {
@@ -477,11 +454,6 @@ export function createApiRouter() {
           });
           return;
         }
-        await db.recordRateLimitEvent(
-          `mut:${session.phone_hash}`,
-          nowMs,
-          nowMs - RATE_WINDOW_MS,
-        );
 
         const existing = await db.getRegistrationByPhoneHash(session.phone_hash);
         if (existing && existing.phone_number_hash !== session.phone_hash) {
@@ -535,14 +507,10 @@ export function createApiRouter() {
         const db = getDatabase();
         const nowMs = Date.now();
 
-        const limitTimestamps = await db.getRateLimitTimestamps(
+        const rateLimit = await db.reserveRateLimitEvent(
           `mut:${session.phone_hash}`,
-          nowMs - RATE_WINDOW_MS,
-        );
-        const rateLimit = evaluateRateLimit(
-          limitTimestamps,
           nowMs,
-          RATE_WINDOW_MS,
+          nowMs - RATE_WINDOW_MS,
           MAX_MUTATIONS_PER_PHONE,
         );
         if (!rateLimit.allowed) {
@@ -552,11 +520,6 @@ export function createApiRouter() {
           });
           return;
         }
-        await db.recordRateLimitEvent(
-          `mut:${session.phone_hash}`,
-          nowMs,
-          nowMs - RATE_WINDOW_MS,
-        );
 
         const existing = await db.getRegistrationByPhoneHash(session.phone_hash);
         if (existing && existing.phone_number_hash !== session.phone_hash) {
