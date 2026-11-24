@@ -148,7 +148,7 @@ function openInitializedSqlite(): DatabaseSync {
   const dbPath = resolveSqlitePath();
   const db = new DatabaseSync(dbPath);
 
-  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
 
   // Remove any legacy development tables that stored raw normalized phone numbers.
   if (tableExists(db, 'registrations')) {
