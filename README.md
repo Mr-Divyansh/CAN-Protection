@@ -7,7 +7,7 @@ CAN Protection is a privacy-first cybersecurity web application for **mobile-num
 ## Implemented Features
 
 - Country-aware mobile number validation and in-memory E.164 normalization (`+91` India default, plus `+1`, `+44`, `+61`, `+65`, `+971`, `+49`, `+81`).
-- Server-side OTP ownership verification (`HMAC-SHA256` hashed codes, 5-minute TTL, 30s resend cooldown, max 5 attempts, atomic single-use replay prevention, and sliding-window IP/number rate limiting).
+- Server-side OTP ownership verification (`HMAC-SHA256` hashed codes, 5-minute TTL, 30s resend cooldown, max 5 attempts, atomic single-use replay prevention, and atomic sliding-window IP/number rate limiting).
 - **Development Test Mode** (`OTP_PROVIDER=demo`) is available locally without SMS credentials; it is unconditionally disabled in production, where a real provider (`twilio` or `msg91`) is required.
 - Verification-gated registration status lookup, duplicate-safe activation, and confirmation-required deactivation (`active` / `inactive`).
 - Zero raw phone numbers stored in the database: numbers are normalized to E.164 in memory and queried via keyed `HMAC-SHA256` (`PHONE_LOOKUP_HMAC_KEY`), storing only `phone_number_hash`, `phone_last4`, and `country_code`.
