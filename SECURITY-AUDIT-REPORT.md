@@ -7,7 +7,7 @@
 
 
 
- > Follow-up security fixes passed GitHub Actions run [#45443413351](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45443413351) for commit `c4d85f41d3a352d9b558385217c31c261ee15f20`: frozen dependency install, TypeScript check, all 29 automated tests, and Vite production build. Production credentials, live SMS, and deployment were not exercised.
+ > Follow-up security fixes passed GitHub Actions run [#45443413351](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45443413351) for commit `c4d85f41d3a352d9b558385217c31c261ee15f20`: frozen dependency install, TypeScript check, all 30 automated tests, and Vite production build. Production credentials, live SMS, and deployment were not exercised.
 
 | Control | Implementation | Verification |
 | --- | --- | --- |
@@ -17,7 +17,7 @@
 | Production demo-mode fail closed | `NODE_ENV=production` or `VERCEL=1` always rejects unset or `demo` `OTP_PROVIDER` (`503`); no override exists. | Covered by `server/env.test.ts`; CI passed |
 | Pre-verification anti-enumeration | `POST /api/otp/request` never discloses whether a number exists in `phone_registrations`; unknown `/api/*` paths return structured JSON `404`. | Tested in `server/routes.test.ts` |
 | Non-plaintext OTP storage & timing-safe verification | OTPs hashed via `HMAC-SHA256(pepper, otp:challengeId:code)` and verified with `crypto.timingSafeEqual`. | Unit tested in `src/lib/otp-policy.test.ts` |
-| OTP expiry, attempt limits & atomic replay protection | 5-minute TTL (`410`), max 5 attempts per challenge enforced with a conditional atomic update (`429`), and atomic `consumed_at IS NULL` check (`409` on replay/race). | Unit + API integration tests, including concurrent invalid submissions |
+| OTP expiry, attempt limits & atomic replay protection | 5-minute TTL (`410`), max 5 attempts per challenge enforced with a conditional atomic update (`429`), and atomic `consumed_at IS NULL` and `attempts < max_attempts` checks (`409` on replay, `429` on lockout). | Unit + API integration tests, including concurrent invalid submissions |
 | Rate limiting & resend cooldown | Atomic SQLite transaction reserves each sliding-window event per IP hash & phone hash; 30s resend cooldown. Caller-supplied `X-Forwarded-For` is not trusted by default. | API integration test covers concurrent requests and spoofed forwarding headers |
 | Ownership-verified Bearer authorization | `/api/registration/*` requires a valid non-revoked `Authorization: Bearer` token bound server-side to `phone_hash`; client never supplies phone numbers or record IDs for lookups/mutations. | Verified `401` without token and after logout in `server/routes.test.ts` |
 | Explicit `updated_at` & confirmation-gated deactivation | Every insert/activate/re-verify/deactivate explicitly sets `updated_at`; deactivation requires `{ confirm: true }`. | Verified in `server/db.test.ts` & `server/routes.test.ts` |
