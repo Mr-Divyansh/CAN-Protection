@@ -5,9 +5,9 @@
 
 ## Verified Security Controls
 
-> A follow-up code review identified and fixed a concurrent OTP-attempt race. The follow-up CI run for the added atomic-attempt implementation is pending; do not treat this follow-up as CI-verified until that run passes.
 
-> The hardening branch passed GitHub Actions run [#45441058863](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45441058863): dependency install, TypeScript check, all 26 automated tests, and Vite production build. Production credentials, live SMS, and deployment were not exercised.
+
+ > Follow-up security fixes passed GitHub Actions run [#45443413351](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45443413351) for commit `c4d85f41d3a352d9b558385217c31c261ee15f20`: frozen dependency install, TypeScript check, all 29 automated tests, and Vite production build. Production credentials, live SMS, and deployment were not exercised.
 
 | Control | Implementation | Verification |
 | --- | --- | --- |
