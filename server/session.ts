@@ -1,15 +1,18 @@
 import crypto from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { getDatabase, type DbSessionRow } from './db.ts';
-import { hasRealEnvValue, validateStorageEnvironment } from './env.ts';
+import { hasRealEnvValue, isProductionEnvironment, validateStorageEnvironment } from './env.ts';
 
 const EPHEMERAL_FALLBACK_SECRET = crypto.randomBytes(32).toString('hex');
 const EPHEMERAL_FALLBACK_PHONE_HMAC = crypto.randomBytes(32).toString('hex');
 
 export function getServerPepper(): string {
   const configured = process.env.CAN_SERVER_SECRET?.trim();
-  if (configured && configured.length >= 16 && !configured.includes('MY_')) {
+  if (configured && configured.length >= 32 && !configured.startsWith('MY_')) {
     return configured;
+  }
+  if (isProductionEnvironment()) {
+    throw new Error('CAN_SERVER_SECRET must be a persistent random secret of at least 32 characters in production.');
   }
   return EPHEMERAL_FALLBACK_SECRET;
 }
