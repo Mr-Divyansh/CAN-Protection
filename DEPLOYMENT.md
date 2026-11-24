@@ -5,6 +5,7 @@
 CAN Protection runs as a **React 19 + Vite 8 + TypeScript** frontend paired with an **Express (`server.ts`)** backend serving both `/api/*` and the built `dist/` SPA.
 
 - **Node.js Requirement**: Node.js `>= 22.18.0` (required for `node:sqlite` and native TypeScript execution on `npm start` / `node server.ts`).
+- **Reverse Proxy Trust**: `TRUST_PROXY_HOPS` defaults to `0` (no forwarded headers trusted). Set it only to the verified number of trusted reverse proxies; never trust arbitrary client-supplied `X-Forwarded-For` values.
 - **Windows & Cross-Platform Compatibility**: `server.ts` resolves paths with `fileURLToPath(import.meta.url)` and `npm test` invokes explicit test paths without POSIX shell globs so development works smoothly on Windows, macOS, and Linux.
 
 ## External Services Required for Production
