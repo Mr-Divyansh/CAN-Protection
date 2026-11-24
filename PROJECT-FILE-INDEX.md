@@ -36,7 +36,7 @@
 - `public/assets/` — Approved official logo, dark/light assets, `app-icon.png`, and `favicon.png`.
 
 ## Database Reference (`supabase/`)
-- `supabase/migrations/001_init_can_protection.sql` — Legacy raw-phone schema reference; do not run until migration history is reconciled.
+- `supabase/legacy/001_init_can_protection.sql` — Archived legacy raw-phone schema; never execute. Timestamped files under `supabase/migrations/` mirror the live migration history.
 
 ## Documentation (`*.md`, `LOOP.txt`)
 - `README.md`, `PROJECT-HANDOVER.md`, `PROJECT-FILE-INDEX.md`, `KNOWN-ISSUES.md`, `ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `SECURITY.md`, `SECURITY-AUDIT-REPORT.md`, `TESTING.md`, `DEPLOYMENT.md`, `OTP-PROVIDER-SETUP.md`, `PRD.md`, `DESIGN.md`, `ROLES.md`, `MEMO.md`, `CHANGELOG.md`, `PRIVACY-POLICY.md`, `TERMS.md`, `CONTACT.md`, `LOOP.txt`.
