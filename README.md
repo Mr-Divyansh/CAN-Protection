@@ -8,10 +8,10 @@ CAN Protection is a privacy-first cybersecurity web application for **mobile-num
 
 - Country-aware mobile number validation and in-memory E.164 normalization (`+91` India default, plus `+1`, `+44`, `+61`, `+65`, `+971`, `+49`, `+81`).
 - Server-side OTP ownership verification (`HMAC-SHA256` hashed codes, 5-minute TTL, 30s resend cooldown, max 5 attempts, atomic single-use replay prevention, and sliding-window IP/number rate limiting).
-- **Development Test Mode** (`OTP_PROVIDER=demo`) when running locally without SMS credentials; fails closed in production (`NODE_ENV=production` / `VERCEL=1`) unless a real provider (`twilio` or `msg91`) or explicit `ALLOW_DEV_OTP_DEMO=true` is configured.
+- **Development Test Mode** (`OTP_PROVIDER=demo`) when running locally without SMS credentials; is disabled unconditionally in production; a real provider (`twilio` or `msg91`) is required.
 - Verification-gated registration status lookup, duplicate-safe activation, and confirmation-required deactivation (`active` / `inactive`).
 - Zero raw phone numbers stored in the database: numbers are normalized to E.164 in memory and queried via keyed `HMAC-SHA256` (`PHONE_LOOKUP_HMAC_KEY`), storing only `phone_number_hash`, `phone_last4`, and `country_code`.
-- Integrates existing private Supabase table `public.phone_registrations` (`edykghafxrrvsfbcxnkt`) via `@supabase/supabase-js` (`SUPABASE_URL` + `SUPABASE_SECRET_KEY`), with local `node:sqlite` fallback when Supabase credentials are absent.
+- Integrates existing private Supabase table `public.phone_registrations` (`edykghafxrrvsfbcxnkt`) via `@supabase/supabase-js` (`SUPABASE_URL` + `SUPABASE_SECRET_KEY`), with local `node:sqlite` registration fallback only during development. Production refuses this fallback.
 - Responsive Desktop & Mobile UI with Dark Mode (`#0C0F13`) and Light Mode (`#F4F1EA`) using the approved CAN Protection brand assets.
 
 ## Important Technical Limitation
@@ -26,7 +26,7 @@ Registering a mobile number in CAN Protection does **not** independently block i
   npm install
   ```
 - **2. Configure environment**:
-  Copy `.env.example` to `.env`. Keep `OTP_PROVIDER=demo` for local development without SMS credentials. Leave `SUPABASE_*` blank to use local SQLite (`data/can-protection.db`), or set `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `PHONE_LOOKUP_HMAC_KEY` to connect to Supabase.
+  Copy `.env.example` to `.env`. Keep `OTP_PROVIDER=demo` for local development without SMS credentials. Leave `SUPABASE_*` blank for local SQLite development, or set `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `PHONE_LOOKUP_HMAC_KEY` to connect to Supabase. Never use local SQLite as production registration storage.
 - **3. Run & verify**:
   ```bash
   npm run dev      # Start Express + Vite dev server on http://localhost:3000
