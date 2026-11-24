@@ -5,9 +5,7 @@
 
 ## Verified Security Controls
 
-
-
- > Follow-up security fixes passed GitHub Actions run [#45443413351](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45443413351) for commit `c4d85f41d3a352d9b558385217c31c261ee15f20`: frozen dependency install, TypeScript check, all 30 automated tests, and Vite production build. Production credentials, live SMS, and deployment were not exercised.
+> Follow-up security fixes passed GitHub Actions run [#45443697098](https://github.com/Mr-Divyansh/CAN-Protection/actions/runs/45443697098) for commit `3ddbd888392367f14bd9a854935aa20177dca560`: frozen dependency install, TypeScript check, all 30 automated tests, and Vite production build. Production credentials, live SMS, and deployment were not exercised.
 
 | Control | Implementation | Verification |
 | --- | --- | --- |
